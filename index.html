@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sax Fingering Game</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-primary: #ffffff;
+      --bg-secondary: #f5f5f3;
+      --text-primary: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --text-tertiary: #aaaaaa;
+      --border: #e0e0e0;
+      --border-strong: #c0c0c0;
+      --blue: #378ADD;
+      --blue-dark: #185FA5;
+      --green-bg: #EAF3DE;
+      --green-border: #639922;
+      --green-text: #3B6D11;
+      --red-bg: #FCEBEB;
+      --red-border: #E24B4A;
+      --red-text: #A32D2D;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg-primary: #1e1e1e;
+        --bg-secondary: #2a2a2a;
+        --text-primary: #e8e8e8;
+        --text-secondary: #999999;
+        --text-tertiary: #666666;
+        --border: #3a3a3a;
+        --border-strong: #555555;
+      }
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+    #app {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem 1rem;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 1.1rem;
+      flex-wrap: wrap;
+      gap: .75rem;
+    }
+    .score-box { display: flex; gap: 1.5rem; }
+    .metric { display: flex; flex-direction: column; align-items: center; }
+    .metric-val { font-size: 22px; font-weight: 500; color: var(--text-primary); line-height: 1; }
+    .metric-lbl { font-size: 11px; color: var(--text-secondary); margin-top: 2px; text-transform: uppercase; letter-spacing: .06em; }
+    .modes { display: flex; gap: 6px; }
+    .mode-btn {
+      font-size: 12px; padding: 5px 11px;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+    .mode-btn.active { background: #dbeeff; color: #185FA5; border-color: #378ADD; }
+    @media (prefers-color-scheme: dark) {
+      .mode-btn.active { background: #0c2d4a; color: #85b7eb; border-color: #378ADD; }
+    }
+    .game-area {
+      display: flex;
+      gap: 1.25rem;
+      align-items: flex-start;
+      width: 100%;
+    }
+    .sax-col { display: flex; flex-direction: column; align-items: center; flex: 0 0 auto; }
+    .right-col { flex: 1; display: flex; flex-direction: column; gap: .75rem; min-width: 0; }
+    .staff-box {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-lg);
+      padding: .75rem 1rem;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .staff-label { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; }
+    .choices { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+    .choice-btn {
+      padding: .65rem .5rem;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-size: 19px; font-weight: 500;
+      cursor: pointer;
+      line-height: 1.1; text-align: center;
+      transition: background .1s;
+    }
+    .choice-btn:hover { background: var(--bg-secondary); }
+    .choice-btn.correct { background: var(--green-bg); border-color: var(--green-border); color: var(--green-text); }
+    .choice-btn.wrong   { background: var(--red-bg);   border-color: var(--red-border);   color: var(--red-text); }
+    .feedback { font-size: 13px; text-align: center; min-height: 18px; color: var(--text-secondary); }
+    .feedback.ok  { color: var(--green-text); }
+    .feedback.bad { color: var(--red-text); }
+    .next-btn {
+      width: 100%; padding: .55rem;
+      border: 0.5px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: transparent; color: var(--text-primary);
+      font-size: 14px; cursor: pointer;
+    }
+    .next-btn:hover { background: var(--bg-secondary); }
+    .ref-toggle { font-size: 12px; color: var(--text-secondary); cursor: pointer; text-decoration: underline; margin-top: .75rem; }
+    .ref-table { width: 100%; margin-top: .75rem; border: 0.5px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .ref-table table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ref-table th { background: var(--bg-secondary); padding: 6px 8px; text-align: left; font-weight: 500; color: var(--text-secondary); border-bottom: 0.5px solid var(--border); }
+    .ref-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--border); color: var(--text-primary); }
+    .ref-table tr:last-child td { border-bottom: none; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 2px; vertical-align: middle; }
+    .dot.on  { background: var(--blue); }
+    .dot.off { background: var(--border-strong); }
+
+    /* Mobile tweaks */
+    @media (max-width: 480px) {
+      .game-area { gap: .75rem; }
+      .choice-btn { font-size: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="top-bar">
+    <div class="score-box">
+      <div class="metric"><span class="metric-val" id="score">0</span><span class="metric-lbl">Score</span></div>
+      <div class="metric"><span class="metric-val" id="streak">0</span><span class="metric-lbl">Streak</span></div>
+      <div class="metric"><span class="metric-val" id="total">0</span><span class="metric-lbl">Total</span></div>
+    </div>
+    <div class="modes">
+      <button class="mode-btn active" id="btn-m1" onclick="setMode('keys-to-note')">Keys → Note</button>
+      <button class="mode-btn" id="btn-m2" onclick="setMode('note-to-keys')">Note → Keys</button>
+    </div>
+  </div>
+
+  <div class="game-area">
+    <div class="sax-col">
+      <svg id="sax-svg" width="130" height="310" viewBox="0 0 130 310" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <div class="right-col">
+      <div class="staff-box">
+        <div class="staff-label" id="staff-label">What note is this fingering?</div>
+        <svg id="staff-svg" width="100%" height="110" viewBox="0 0 260 110" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="choices" id="choices"></div>
+      <div class="feedback" id="feedback"></div>
+      <button class="next-btn" id="next-btn" onclick="nextRound()" style="display:none">Next →</button>
+    </div>
+  </div>
+
+  <div class="ref-toggle" onclick="toggleRef()">show fingering reference</div>
+  <div class="ref-table" id="ref-table" style="display:none">
+    <table>
+      <thead><tr><th>Note</th><th>Octave key</th><th>Left hand</th><th>Right hand</th></tr></thead>
+      <tbody id="ref-body"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+function displayName(n){ return n === 'B' ? 'H' : n; }
+
+const NOTES = [
+  {name:"D", oct:false, l:[1,1,1], r:[1,1,1], label:"Low D",  hint:"All 6 fingers, no octave key"},
+  {name:"E", oct:false, l:[1,1,1], r:[1,1,0], label:"Low E",  hint:"L1 L2 L3 + R1 R2"},
+  {name:"F", oct:false, l:[1,1,1], r:[1,0,0], label:"Low F",  hint:"L1 L2 L3 + R1"},
+  {name:"G", oct:false, l:[1,1,1], r:[0,0,0], label:"Low G",  hint:"L1 L2 L3 only"},
+  {name:"A", oct:false, l:[1,1,0], r:[0,0,0], label:"Low A",  hint:"L1 L2 only"},
+  {name:"B", oct:false, l:[1,0,0], r:[0,0,0], label:"Low H",  hint:"L1 only"},
+  {name:"C", oct:false, l:[0,1,0], r:[0,0,0], label:"Low C",  hint:"L2 only"},
+  {name:"D", oct:true,  l:[1,1,1], r:[1,1,1], label:"High D", hint:"All 6 fingers + octave key"},
+  {name:"E", oct:true,  l:[1,1,1], r:[1,1,0], label:"High E", hint:"L1 L2 L3 + R1 R2 + octave key"},
+  {name:"F", oct:true,  l:[1,1,1], r:[1,0,0], label:"High F", hint:"L1 L2 L3 + R1 + octave key"},
+  {name:"G", oct:true,  l:[1,1,1], r:[0,0,0], label:"High G", hint:"L1 L2 L3 + octave key"},
+  {name:"A", oct:true,  l:[1,1,0], r:[0,0,0], label:"High A", hint:"L1 L2 + octave key"},
+  {name:"B", oct:true,  l:[1,0,0], r:[0,0,0], label:"High H", hint:"L1 + octave key"},
+];
+
+const ALL_DISPLAY_NAMES = ["D","E","F","G","A","H","C"];
+let mode='keys-to-note', current=null, answered=false;
+let score=0, streak=0, total=0;
+
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+function setMode(m){
+  mode = m;
+  document.getElementById('btn-m1').className = 'mode-btn' + (m==='keys-to-note' ? ' active' : '');
+  document.getElementById('btn-m2').className = 'mode-btn' + (m==='note-to-keys' ? ' active' : '');
+  nextRound();
+}
+
+function nextRound(){
+  answered = false;
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = 'feedback';
+  document.getElementById('next-btn').style.display = 'none';
+  current = rand(NOTES);
+  if(mode === 'keys-to-note'){
+    drawSax(current, false);
+    drawStaff(null);
+    buildNoteChoices();
+    document.getElementById('staff-label').textContent = 'What note is this fingering?';
+  } else {
+    drawSax(null);
+    drawStaff(current);
+    buildFingeringChoices();
+    document.getElementById('staff-label').textContent = 'Find the fingering for this note';
+  }
+}
+
+function drawSax(noteData, showLabel){
+  const svg = document.getElementById('sax-svg');
+  const W=130, H=310, bx=25, bw=80, by=28, bh=250, br=16;
+  const lx=50, rx=88, kr=13;
+  const lys=[95,126,157], rys=[200,228,256];
+  const lkeys = noteData ? noteData.l : [0,0,0];
+  const rkeys = noteData ? noteData.r : [0,0,0];
+  const octOn = noteData ? noteData.oct : false;
+  const C = getColors();
+  let s = '';
+  s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="${br}" fill="${C.bg2}" stroke="${C.border}" stroke-width="1"/>`;
+  s += `<ellipse cx="${bx+bw/2}" cy="${by+bh+8}" rx="32" ry="10" fill="${C.bg2}" stroke="${C.border}" stroke-width="1"/>`;
+  s += `<text x="${W/2}" y="18" text-anchor="middle" font-size="9" fill="${C.muted}">octave key</text>`;
+  s += `<rect x="${W/2-14}" y="20" width="28" height="16" rx="6" fill="${octOn?'#378ADD':C.bg1}" stroke="${octOn?'#185FA5':C.border}" stroke-width="1.5"/>`;
+  if(octOn) s += `<text x="${W/2}" y="31" text-anchor="middle" font-size="9" font-weight="500" fill="#fff">ON</text>`;
+  s += `<text x="${lx}" y="${lys[0]-20}" text-anchor="middle" font-size="9" fill="${C.muted}">left</text>`;
+  lys.forEach((cy,i) => {
+    const on = lkeys[i];
+    s += `<circle cx="${lx}" cy="${cy}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${on?'#185FA5':C.border}" stroke-width="1.5"/>`;
+    s += `<text x="${lx}" y="${cy+4}" text-anchor="middle" font-size="9" font-weight="500" fill="${on?'#fff':C.hint}">L${i+1}</text>`;
+  });
+  s += `<text x="${rx}" y="${rys[0]-20}" text-anchor="middle" font-size="9" fill="${C.muted}">right</text>`;
+  rys.forEach((cy,i) => {
+    const on = rkeys[i];
+    s += `<circle cx="${rx}" cy="${cy}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${on?'#185FA5':C.border}" stroke-width="1.5"/>`;
+    s += `<text x="${rx}" y="${cy+4}" text-anchor="middle" font-size="9" font-weight="500" fill="${on?'#fff':C.hint}">R${i+1}</text>`;
+  });
+  if(showLabel === true && noteData){
+    s += `<text x="${W/2}" y="${H-2}" text-anchor="middle" font-size="14" font-weight="500" fill="${C.text}">${noteData.label}</text>`;
+  }
+  svg.innerHTML = s;
+}
+
+function drawStaff(noteData, revealNote){
+  const svg = document.getElementById('staff-svg');
+  const W=260, H=110, sy=38, lg=11;
+  const C = getColors();
+  let s = '';
+  s += `<text x="8" y="${sy+lg*4+6}" font-size="52" fill="${C.muted}" font-family="serif" dominant-baseline="bottom">&#119070;</text>`;
+  for(let i=0;i<5;i++){
+    s += `<line x1="8" y1="${sy+i*lg}" x2="${W-8}" y2="${sy+i*lg}" stroke="${C.border}" stroke-width="0.8"/>`;
+  }
+  if(noteData){
+    const step = noteSteps(noteData.name, noteData.oct);
+    const ny = sy + step*(lg/2);
+    const nx=170, nr=7;
+    if(ny < sy-nr){
+      for(let ly=sy-lg; ly>=ny-2; ly-=lg)
+        s += `<line x1="${nx-nr-4}" y1="${ly}" x2="${nx+nr+4}" y2="${ly}" stroke="${C.text}" stroke-width="0.8"/>`;
+    }
+    if(ny > sy+4*lg+nr){
+      for(let ly=sy+5*lg; ly<=ny+2; ly+=lg)
+        s += `<line x1="${nx-nr-4}" y1="${ly}" x2="${nx+nr+4}" y2="${ly}" stroke="${C.text}" stroke-width="0.8"/>`;
+    }
+    const col = revealNote ? '#378ADD' : C.text;
+    s += `<ellipse cx="${nx}" cy="${ny}" rx="${nr}" ry="${nr*0.72}" fill="${col}" transform="rotate(-15,${nx},${ny})"/>`;
+    const stemDir = ny > sy+2*lg ? -1 : 1;
+    const stemX = stemDir===1 ? nx+nr-1 : nx-nr+1;
+    s += `<line x1="${stemX}" y1="${ny}" x2="${stemX}" y2="${ny-stemDir*32}" stroke="${col}" stroke-width="1.5"/>`;
+    if(noteData.oct)
+      s += `<text x="${nx}" y="${ny-stemDir*32-(stemDir===1?6:-12)}" text-anchor="middle" font-size="11" fill="${col}">8va</text>`;
+    if(revealNote)
+      s += `<text x="${nx}" y="${H-2}" text-anchor="middle" font-size="13" font-weight="500" fill="${col}">${noteData.label}</text>`;
+  }
+  svg.innerHTML = s;
+}
+
+function noteSteps(name, oct){
+  const low  = {C:3, B:4, A:5, G:6, F:7, E:8, D:9};
+  const high = {B:-3, A:-2, G:-1, F:0, E:1, D:2, C:-4};
+  return oct ? high[name] : low[name];
+}
+
+function getColors(){
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return {
+    bg1:    dark ? '#1e1e1e' : '#ffffff',
+    bg2:    dark ? '#2a2a2a' : '#f5f5f3',
+    text:   dark ? '#e8e8e8' : '#1a1a1a',
+    muted:  dark ? '#999999' : '#6b6b6b',
+    hint:   dark ? '#666666' : '#aaaaaa',
+    border: dark ? '#3a3a3a' : '#e0e0e0',
+  };
+}
+
+function buildNoteChoices(){
+  const ch = document.getElementById('choices');
+  ch.innerHTML = '';
+  const correctDisplay = displayName(current.name);
+  const wrong = ALL_DISPLAY_NAMES.filter(n => n !== correctDisplay);
+  const picks = [];
+  while(picks.length < 3){ picks.push(wrong.splice(Math.floor(Math.random()*wrong.length),1)[0]); }
+  const opts = [correctDisplay, ...picks].sort(() => Math.random()-.5);
+  opts.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.textContent = n;
+    b.onclick = () => answerNote(n, b, correctDisplay);
+    ch.appendChild(b);
+  });
+}
+
+function buildFingeringChoices(){
+  const ch = document.getElementById('choices');
+  ch.innerHTML = '';
+  const wrongs = NOTES.filter(n => !(n.l.join()===current.l.join() && n.r.join()===current.r.join() && n.oct===current.oct));
+  const pool = [...wrongs], picks = [];
+  while(picks.length < 3 && pool.length){ picks.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]); }
+  const opts = [{...current, isCorrect:true}, ...picks.map(p=>({...p,isCorrect:false}))].sort(()=>Math.random()-.5);
+  opts.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'choice-btn';
+    b.innerHTML = miniSaxSvg(c.l, c.r, c.oct);
+    b.style.padding = '6px';
+    b.dataset.correct = c.isCorrect;
+    b.onclick = () => answerFingering(c.isCorrect, b);
+    ch.appendChild(b);
+  });
+}
+
+function answerNote(val, btn, correctDisplay){
+  if(answered) return;
+  answered = true; total++;
+  const correct = val === correctDisplay;
+  if(correct){score++;streak++;}else{streak=0;}
+  updateScores();
+  document.getElementById('choices').querySelectorAll('button').forEach(b => {
+    if(b.textContent.trim() === correctDisplay) b.className = 'choice-btn correct';
+    else if(b === btn && !correct) b.className = 'choice-btn wrong';
+  });
+  const fb = document.getElementById('feedback');
+  fb.textContent = correct ? 'Correct! ' + current.hint : 'Not quite — ' + current.label + '. ' + current.hint;
+  fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+  drawStaff(current, true);
+  drawSax(current, true);
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function answerFingering(correct, btn){
+  if(answered) return;
+  answered = true; total++;
+  if(correct){score++;streak++;}else{streak=0;}
+  updateScores();
+  document.getElementById('choices').querySelectorAll('button').forEach(b => {
+    if(b.dataset.correct === 'true') b.className = 'choice-btn correct';
+    else if(b === btn && !correct) b.className = 'choice-btn wrong';
+  });
+  const fb = document.getElementById('feedback');
+  fb.textContent = correct ? 'Correct! ' + current.hint : 'Not quite — ' + current.label + '. ' + current.hint;
+  fb.className = 'feedback ' + (correct ? 'ok' : 'bad');
+  drawSax(current, true);
+  document.getElementById('next-btn').style.display = 'block';
+}
+
+function updateScores(){
+  document.getElementById('score').textContent = score;
+  document.getElementById('streak').textContent = streak;
+  document.getElementById('total').textContent = total;
+}
+
+function miniSaxSvg(l, r, oct){
+  const W=56, H=96, lx=18, rx=40, kr=6;
+  const lys=[18,33,48], rys=[63,76,89];
+  const C = getColors();
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect x="2" y="2" width="${W-4}" height="${H-4}" rx="8" fill="none" stroke="${C.border}" stroke-width="0.5"/>`;
+  s += `<rect x="${W/2-8}" y="4" width="16" height="8" rx="3" fill="${oct?'#378ADD':C.bg1}" stroke="${oct?'#185FA5':C.border}" stroke-width="0.8"/>`;
+  if(oct) s += `<text x="${W/2}" y="11" text-anchor="middle" font-size="6" fill="#fff">8va</text>`;
+  l.forEach((on,i) => { s += `<circle cx="${lx}" cy="${lys[i]}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${C.border}" stroke-width="0.8"/>`; });
+  r.forEach((on,i) => { s += `<circle cx="${rx}" cy="${rys[i]}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${C.border}" stroke-width="0.8"/>`; });
+  s += '</svg>';
+  return s;
+}
+
+function toggleRef(){
+  const t = document.getElementById('ref-table');
+  const tog = document.querySelector('.ref-toggle');
+  if(t.style.display === 'none'){ t.style.display='block'; tog.textContent='hide fingering reference'; buildRef(); }
+  else { t.style.display='none'; tog.textContent='show fingering reference'; }
+}
+
+function buildRef(){
+  const tb = document.getElementById('ref-body');
+  tb.innerHTML = '';
+  NOTES.forEach(n => {
+    const tr = document.createElement('tr');
+    const ld = n.l.map(k=>`<span class="dot ${k?'on':'off'}"></span>`).join('');
+    const rd = n.r.map(k=>`<span class="dot ${k?'on':'off'}"></span>`).join('');
+    tr.innerHTML = `<td><strong>${n.label}</strong></td><td>${n.oct?'<span class="dot on"></span> yes':'<span class="dot off"></span> no'}</td><td>${ld}</td><td>${rd}</td>`;
+    tb.appendChild(tr);
+  });
+}
+
+nextRound();
+</script>
+</body>
+</html>
