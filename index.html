@@ -282,8 +282,6 @@ function drawStaff(noteData, revealNote){
     const stemDir = ny > sy+2*lg ? -1 : 1;
     const stemX = stemDir===1 ? nx+nr-1 : nx-nr+1;
     s += `<line x1="${stemX}" y1="${ny}" x2="${stemX}" y2="${ny-stemDir*32}" stroke="${col}" stroke-width="1.5"/>`;
-    if(noteData.oct)
-      s += `<text x="${nx}" y="${ny-stemDir*32-(stemDir===1?6:-12)}" text-anchor="middle" font-size="11" fill="${col}">8va</text>`;
     if(revealNote)
       s += `<text x="${nx}" y="${H-2}" text-anchor="middle" font-size="13" font-weight="500" fill="${col}">${noteData.label}</text>`;
   }
@@ -390,7 +388,6 @@ function miniSaxSvg(l, r, oct){
   let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
   s += `<rect x="2" y="2" width="${W-4}" height="${H-4}" rx="8" fill="none" stroke="${C.border}" stroke-width="0.5"/>`;
   s += `<rect x="${W/2-8}" y="4" width="16" height="8" rx="3" fill="${oct?'#378ADD':C.bg1}" stroke="${oct?'#185FA5':C.border}" stroke-width="0.8"/>`;
-  if(oct) s += `<text x="${W/2}" y="11" text-anchor="middle" font-size="6" fill="#fff">8va</text>`;
   l.forEach((on,i) => { s += `<circle cx="${lx}" cy="${lys[i]}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${C.border}" stroke-width="0.8"/>`; });
   r.forEach((on,i) => { s += `<circle cx="${rx}" cy="${rys[i]}" r="${kr}" fill="${on?'#378ADD':C.bg1}" stroke="${C.border}" stroke-width="0.8"/>`; });
   s += '</svg>';
